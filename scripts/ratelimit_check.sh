@@ -54,7 +54,7 @@ declare -A AGENT_CLI AGENT_MODEL AGENT_PANE
 for agent in "${ALL_AGENTS[@]}"; do
     # Determine pane target using @agent_id tmux option (dynamic, no hardcoded pane indices)
     if [[ "$agent" == "shogun" ]]; then
-        pane_target="shogun:main"
+        pane_target="cshogun:main"
     else
         pane_target=$(tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{@agent_id}' 2>/dev/null \
             | awk -v a="$agent" '$2 == a {print $1}' | head -1)

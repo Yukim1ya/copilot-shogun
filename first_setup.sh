@@ -748,52 +748,43 @@ log_step "STEP 10: alias設定"
 # alias追加対象ファイル
 BASHRC_FILE="$HOME/.bashrc"
 
-# css/csm を関数として定義（destroy-unattached で自動掃除）
+# cpss/cpsm を関数として定義（destroy-unattached で自動掃除）
+# css/csm は multi-agent-shogun 側が使用するため、copilot-shogun 専用の別名を使用
 # - 複数端末から接続しても画面サイズが干渉しない
 # - SSH切断・アプリ終了時に一時セッションが自動消滅
-# - 本体セッション (shogun/multiagent) は絶対に消えない
-CSS_FUNC='css() { local s="shogun-$$"; local cols=$(tput cols 2>/dev/null || echo 80); tmux new-session -d -t shogun -s "$s" 2>/dev/null && tmux set-option -t "$s" destroy-unattached on 2>/dev/null; if [ "$cols" -lt 80 ]; then tmux new-window -t "$s" -n mobile 2>/dev/null; tmux attach-session -t "$s:mobile" 2>/dev/null || tmux attach-session -t shogun; else tmux attach-session -t "$s" 2>/dev/null || tmux attach-session -t shogun; fi; }'
-CSM_FUNC='csm() { local s="multi-$$"; local cols=$(tput cols 2>/dev/null || echo 80); tmux new-session -d -t multiagent -s "$s" 2>/dev/null && tmux set-option -t "$s" destroy-unattached on 2>/dev/null; if [ "$cols" -lt 80 ]; then tmux new-window -t "$s" -n mobile 2>/dev/null; tmux attach-session -t "$s:mobile" 2>/dev/null || tmux attach-session -t multiagent; else tmux attach-session -t "$s" 2>/dev/null || tmux attach-session -t multiagent; fi; }'
+# - 本体セッション (cshogun/cmultiagent) は絶対に消えない
+CSS_FUNC='cpss() { local s="cshogun-$$"; local cols=$(tput cols 2>/dev/null || echo 80); tmux new-session -d -t cshogun -s "$s" 2>/dev/null && tmux set-option -t "$s" destroy-unattached on 2>/dev/null; if [ "$cols" -lt 80 ]; then tmux new-window -t "$s" -n mobile 2>/dev/null; tmux attach-session -t "$s:mobile" 2>/dev/null || tmux attach-session -t cshogun; else tmux attach-session -t "$s" 2>/dev/null || tmux attach-session -t cshogun; fi; }'
+CSM_FUNC='cpsm() { local s="cmulti-$$"; local cols=$(tput cols 2>/dev/null || echo 80); tmux new-session -d -t cmultiagent -s "$s" 2>/dev/null && tmux set-option -t "$s" destroy-unattached on 2>/dev/null; if [ "$cols" -lt 80 ]; then tmux new-window -t "$s" -n mobile 2>/dev/null; tmux attach-session -t "$s:mobile" 2>/dev/null || tmux attach-session -t cmultiagent; else tmux attach-session -t "$s" 2>/dev/null || tmux attach-session -t cmultiagent; fi; }'
 
 ALIAS_ADDED=false
 
 if [ -f "$BASHRC_FILE" ]; then
-    # 古い alias 形式を削除（存在する場合）
-    if grep -q "alias css=" "$BASHRC_FILE" 2>/dev/null; then
-        sed -i '/alias css=/d' "$BASHRC_FILE"
-        log_info "旧 alias css を削除しました"
-    fi
-    if grep -q "alias csm=" "$BASHRC_FILE" 2>/dev/null; then
-        sed -i '/alias csm=/d' "$BASHRC_FILE"
-        log_info "旧 alias csm を削除しました"
-    fi
-
-    # css 関数
-    if ! grep -q "^css()" "$BASHRC_FILE" 2>/dev/null; then
-        if ! grep -q "multi-agent-shogun aliases" "$BASHRC_FILE" 2>/dev/null; then
+    # cpss 関数
+    if ! grep -q "^cpss()" "$BASHRC_FILE" 2>/dev/null; then
+        if ! grep -q "copilot-shogun aliases" "$BASHRC_FILE" 2>/dev/null; then
             echo "" >> "$BASHRC_FILE"
-            echo "# multi-agent-shogun aliases (added by first_setup.sh)" >> "$BASHRC_FILE"
+            echo "# copilot-shogun aliases (added by first_setup.sh)" >> "$BASHRC_FILE"
         fi
         echo "$CSS_FUNC" >> "$BASHRC_FILE"
-        log_info "css 関数を追加しました（将軍ウィンドウ — 自動掃除付き）"
+        log_info "cpss 関数を追加しました（将軍ウィンドウ — 自動掃除付き）"
         ALIAS_ADDED=true
     else
         # 関数は存在する → 最新版に更新
-        sed -i '/^css()/d' "$BASHRC_FILE"
+        sed -i '/^cpss()/d' "$BASHRC_FILE"
         echo "$CSS_FUNC" >> "$BASHRC_FILE"
-        log_info "css 関数を更新しました"
+        log_info "cpss 関数を更新しました"
         ALIAS_ADDED=true
     fi
 
-    # csm 関数
-    if ! grep -q "^csm()" "$BASHRC_FILE" 2>/dev/null; then
+    # cpsm 関数
+    if ! grep -q "^cpsm()" "$BASHRC_FILE" 2>/dev/null; then
         echo "$CSM_FUNC" >> "$BASHRC_FILE"
-        log_info "csm 関数を追加しました（家老・足軽ウィンドウ — 自動掃除付き）"
+        log_info "cpsm 関数を追加しました（家老・足軽ウィンドウ — 自動掃除付き）"
         ALIAS_ADDED=true
     else
-        sed -i '/^csm()/d' "$BASHRC_FILE"
+        sed -i '/^cpsm()/d' "$BASHRC_FILE"
         echo "$CSM_FUNC" >> "$BASHRC_FILE"
-        log_info "csm 関数を更新しました"
+        log_info "cpsm 関数を更新しました"
         ALIAS_ADDED=true
     fi
 else

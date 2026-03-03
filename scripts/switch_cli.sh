@@ -62,18 +62,18 @@ resolve_pane() {
     # multiagent セッションの pane 番号体系
     # shutsujin_departure.sh: karo=0, ashigaru1=1, ..., ashigaru7=7, gunshi=8
     local pane_base
-    pane_base=$(tmux show-options -t multiagent -v @pane_base 2>/dev/null || echo "0")
+    pane_base=$(tmux show-options -t cmultiagent -v @pane_base 2>/dev/null || echo "0")
 
     case "$agent_id" in
-        karo)       echo "multiagent:agents.$((pane_base + 0))" ;;
-        ashigaru1)  echo "multiagent:agents.$((pane_base + 1))" ;;
-        ashigaru2)  echo "multiagent:agents.$((pane_base + 2))" ;;
-        ashigaru3)  echo "multiagent:agents.$((pane_base + 3))" ;;
-        ashigaru4)  echo "multiagent:agents.$((pane_base + 4))" ;;
-        ashigaru5)  echo "multiagent:agents.$((pane_base + 5))" ;;
-        ashigaru6)  echo "multiagent:agents.$((pane_base + 6))" ;;
-        ashigaru7)  echo "multiagent:agents.$((pane_base + 7))" ;;
-        gunshi)     echo "multiagent:agents.$((pane_base + 8))" ;;
+        karo)       echo "cmultiagent:agents.$((pane_base + 0))" ;;
+        ashigaru1)  echo "cmultiagent:agents.$((pane_base + 1))" ;;
+        ashigaru2)  echo "cmultiagent:agents.$((pane_base + 2))" ;;
+        ashigaru3)  echo "cmultiagent:agents.$((pane_base + 3))" ;;
+        ashigaru4)  echo "cmultiagent:agents.$((pane_base + 4))" ;;
+        ashigaru5)  echo "cmultiagent:agents.$((pane_base + 5))" ;;
+        ashigaru6)  echo "cmultiagent:agents.$((pane_base + 6))" ;;
+        ashigaru7)  echo "cmultiagent:agents.$((pane_base + 7))" ;;
+        gunshi)     echo "cmultiagent:agents.$((pane_base + 8))" ;;
         *)
             log "ERROR: Unknown agent_id: $agent_id"
             return 1

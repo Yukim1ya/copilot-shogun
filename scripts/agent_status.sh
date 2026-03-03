@@ -216,7 +216,7 @@ fi
 for i in "${!AGENTS[@]}"; do
     agent="${AGENTS[$i]}"
     pane_idx=$((PANE_BASE + i))
-    pane_target="multiagent:agents.${pane_idx}"
+    pane_target="cmultiagent:agents.${pane_idx}"
 
     # CLI type
     if $CLI_ADAPTER_AVAILABLE; then
