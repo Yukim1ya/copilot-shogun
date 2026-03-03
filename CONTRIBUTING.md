@@ -61,7 +61,7 @@ multi-agent-shogun/
 │   ├── karo.md           # Karo (manager) instructions
 │   ├── ashigaru.md       # Ashigaru (worker) instructions
 │   ├── cli_specific/     # CLI-specific tool descriptions
-│   │   ├── claude_tools.md
+│   │   ├── claude_tools.md  # Claude専用（Copilot CLIでは未使用）
 │   │   ├── codex_tools.md
 │   │   └── copilot_tools.md
 │   └── generated/        # Built from templates (do not edit manually)
@@ -96,7 +96,7 @@ multi-agent-shogun/
 │
 ├── shutsujin_departure.sh  # Daily deployment script
 ├── first_setup.sh          # First-time setup
-├── CLAUDE.md               # Core system instructions (auto-loaded)
+├── CLAUDE.md               # Claude専用（Copilot CLIでは未使用）
 ├── AGENTS.md               # Codex auto-load file
 └── Makefile                # Development commands
 ```
