@@ -1834,3 +1834,7 @@ Based on [Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-C
 ⭐ Star this repo if you find it useful — it helps others discover it.
 
 </div>
+=======
+# copilot-shogun
+This is the fork of multi-agent-shogun. This is optimized for github copilot CLI.
+>>>>>>> b398823bc2ee99ff22deeb2afff039f6a4d5033a
