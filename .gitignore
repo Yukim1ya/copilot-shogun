@@ -99,6 +99,7 @@
 !scripts/switch_cli.sh
 !scripts/ashigaru_init.sh
 !scripts/restart_all_agents.sh
+!scripts/system_status.sh
 
 
 # SayTask (sample template only, not actual data)
@@ -185,3 +186,7 @@ tests/specs/osato_lms_*
 # Android companion app
 !android/
 !android/**
+
+# Track directory structure but not runtime state files
+!queue/status/.gitkeep
+!queue/logs/.gitkeep

@@ -35,6 +35,10 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
     INBOX="$SCRIPT_DIR/queue/inbox/${AGENT_ID}.yaml"
     LOCKFILE="${INBOX}.lock"
 
+    # Persist idle flags under queue/status/ (survives /tmp cleanup unlike /tmp)
+    : "${IDLE_FLAG_DIR:=$SCRIPT_DIR/queue/status}"
+    mkdir -p "$IDLE_FLAG_DIR"
+
     if [ -z "$AGENT_ID" ] || [ -z "$PANE_TARGET" ]; then
         echo "Usage: inbox_watcher.sh <agent_id> <pane_target> [cli_type]" >&2
         exit 1
@@ -47,11 +51,12 @@ if [ "${__INBOX_WATCHER_TESTING__:-}" != "1" ]; then
     fi
 
     echo "[$(date)] inbox_watcher started — agent: $AGENT_ID, pane: $PANE_TARGET, cli: $CLI_TYPE" >&2
+    echo "[$(date)] idle flag dir: $IDLE_FLAG_DIR" >&2
 
     # Fix: CLI starts at welcome screen = idle. Create idle flag so watcher
     # doesn't false-busy deadlock waiting for a stop_hook that never fires.
-    if [[ "$CLI_TYPE" == "claude" ]]; then
-        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+    if [[ "$CLI_TYPE" == "claude" || "$CLI_TYPE" == "copilot" ]]; then
+        touch "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}"
         echo "[$(date)] Created initial idle flag for $AGENT_ID (CLI starts idle)" >&2
     fi
 
@@ -152,6 +157,10 @@ ASW_NO_IDLE_FULL_READ=${ASW_NO_IDLE_FULL_READ:-1}
 ASW_DISABLE_ESCALATION=${ASW_DISABLE_ESCALATION:-0}
 ASW_PROCESS_TIMEOUT=${ASW_PROCESS_TIMEOUT:-1}
 
+# ─── Idle flag directory (persistent storage, survives /tmp cleanup) ───
+# Set during startup in the testing guard above; fall back for testing context.
+: "${IDLE_FLAG_DIR:=${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/queue/status}"
+
 # ─── Metrics hooks (FR-006 / NFR-003) ───
 # unread_latency_sec / read_count / estimated_tokens are intentionally explicit
 READ_COUNT=${READ_COUNT:-0}
@@ -191,7 +200,7 @@ disable_normal_nudge() {
         return 1  # Phase 1: never suppress
     fi
     # Phase 2+: check if agent is idle via flag file
-    if [ -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" ]; then
+    if [ -f "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}" ]; then
         return 1  # Agent is IDLE → don't suppress, send nudge
     fi
     return 0  # Agent is BUSY → suppress, stop hook will deliver
@@ -718,7 +727,7 @@ agent_is_busy() {
     effective_cli=$(get_effective_cli_type)
     if [[ "$effective_cli" == "claude" ]]; then
         # フラグファイル方式: フラグなし=busy(return 0)、あり=idle(return 1)
-        [ ! -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" ]
+        [ ! -f "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}" ]
     else
         # 従来のpane解析（Codex等フォールバック）
         agent_is_busy_check "$PANE_TARGET"
@@ -810,7 +819,7 @@ send_wakeup() {
     if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" Enter 2>/dev/null || true
-        rm -f "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+        rm -f "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}"
         echo "[$(date)] Wake-up sent to $AGENT_ID (${unread_count} unread)" >&2
         return 0
     fi
@@ -914,7 +923,7 @@ process_unread() {
         FIRST_UNREAD_SEEN=0
         NEW_CONTEXT_SENT=0
         # Ensure idle flag exists (fast-path recovery)
-        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
+        touch "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         if ! agent_is_busy; then
             # Shogun: only clear input when pane is not active (Lord is away)
             if [ "$AGENT_ID" = "shogun" ] && pane_is_active; then
@@ -1015,7 +1024,7 @@ for s in data.get('specials', []):
             local stale_busy_limit=300  # 5 minutes
             if [ "${FIRST_UNREAD_SEEN:-0}" -gt 0 ] && [ "$((now - FIRST_UNREAD_SEEN))" -ge "$stale_busy_limit" ]; then
                 echo "[$(date)] WARNING: $AGENT_ID busy for $((now - FIRST_UNREAD_SEEN))s with $normal_count unread — forcing idle flag (stale busy recovery)" >&2
-                touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}"
+                touch "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}"
                 # Fall through to normal nudge/escalation below
             else
                 if [[ "$busy_cli" == "claude" ]]; then
@@ -1121,7 +1130,7 @@ for s in data.get('specials', []):
         NEW_CONTEXT_SENT=0
         # Ensure idle flag exists when all messages are read.
         # Recovers from stop_hook_inbox.sh flag loss during block cycles.
-        touch "${IDLE_FLAG_DIR:-/tmp}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
+        touch "${IDLE_FLAG_DIR}/shogun_idle_${AGENT_ID}" 2>/dev/null || true
         # Clear stale nudge text from input field (Codex CLI prefills last input on idle).
         # Only send C-u when agent is idle — during Working it would be disruptive.
         if ! agent_is_busy; then

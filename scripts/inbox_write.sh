@@ -56,9 +56,10 @@ _release_lock() {
     fi
 }
 
-# Atomic write with lock (3 retries)
+# Atomic write with lock (5 retries with exponential backoff)
 attempt=0
-max_attempts=3
+max_attempts=5
+DROPPED_LOG="$SCRIPT_DIR/queue/logs/dropped_messages.log"
 
 while [ $attempt -lt $max_attempts ]; do
     if _acquire_lock; then
@@ -114,16 +115,29 @@ except Exception as e:
         _release_lock
         [ $STATUS -eq 0 ] && exit 0
         attempt=$((attempt + 1))
-        [ $attempt -lt $max_attempts ] && sleep 1
+        if [ $attempt -lt $max_attempts ]; then
+            sleep_sec=$(( 2 ** (attempt - 1) ))  # 1s, 2s, 4s, 8s backoff
+            echo "[inbox_write] Write failed (attempt $attempt/$max_attempts), retrying in ${sleep_sec}s..." >&2
+            sleep "$sleep_sec"
+        fi
     else
         # Lock timeout
         attempt=$((attempt + 1))
         if [ $attempt -lt $max_attempts ]; then
-            echo "[inbox_write] Lock timeout for $INBOX (attempt $attempt/$max_attempts), retrying..." >&2
-            sleep 1
+            sleep_sec=$(( 2 ** (attempt - 1) ))
+            echo "[inbox_write] Lock timeout for $INBOX (attempt $attempt/$max_attempts), retrying in ${sleep_sec}s..." >&2
+            sleep "$sleep_sec"
         else
-            echo "[inbox_write] Failed to acquire lock after $max_attempts attempts for $INBOX" >&2
+            mkdir -p "$(dirname "$DROPPED_LOG")"
+            echo "[$(date)] DROPPED msg_id=$MSG_ID from=$FROM to=$TARGET type=$TYPE: lock timeout after $max_attempts attempts" >> "$DROPPED_LOG"
+            echo "[inbox_write] DROPPED: failed to write message $MSG_ID to $INBOX after $max_attempts attempts" >&2
             exit 1
         fi
     fi
 done
+
+# Final failure: log to dropped messages
+mkdir -p "$(dirname "$DROPPED_LOG")"
+echo "[$(date)] DROPPED msg_id=$MSG_ID from=$FROM to=$TARGET type=$TYPE: write failed after $max_attempts attempts" >> "$DROPPED_LOG"
+echo "[inbox_write] DROPPED: failed to write message $MSG_ID to $INBOX" >&2
+exit 1
