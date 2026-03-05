@@ -158,7 +158,9 @@ build_cli_command() {
             echo "$cmd"
             ;;
         copilot)
-            echo "copilot --yolo"
+            # -i: auto-execute Session Start on launch (TUI maintained for tmux visibility)
+            local init_prompt="Session Start: あなたは${agent_id}です。queue/inbox/${agent_id}.yaml を読んで未読メッセージを処理してください。以後 inbox nudge を受け取ったら同じ手順で処理してください。"
+            echo "copilot --yolo -i \"${init_prompt}\""
             ;;
         kimi)
             local cmd="kimi --yolo"

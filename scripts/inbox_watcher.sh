@@ -800,6 +800,11 @@ send_wakeup() {
         sleep 0.3
         timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
         sleep 0.3
+    elif [[ "$effective_cli_for_nudge" == "copilot" ]]; then
+        # Copilot CLI: send explicit nudge so agent knows its identity and inbox path
+        nudge="あなたは${AGENT_ID}です。queue/inbox/${AGENT_ID}.yaml を読んで${unread_count}件の未読メッセージを処理してください。"
+        timeout 5 tmux send-keys -t "$PANE_TARGET" C-u 2>/dev/null || true
+        sleep 0.3
     fi
 
     if timeout 5 tmux send-keys -t "$PANE_TARGET" "$nudge" 2>/dev/null; then
@@ -843,6 +848,13 @@ send_wakeup_with_escape() {
     # Escape送信は処理中のturnを中断させるため有害。Phase 2は通常nudgeに落とす。
     if [[ "$effective_cli" == "claude" ]]; then
         echo "[$(date)] [SKIP] claude: suppressing Escape escalation for $AGENT_ID (Stop hook handles delivery); sending plain nudge" >&2
+        send_wakeup "$unread_count"
+        return 0
+    fi
+
+    # Copilot CLI: explicit nudge (with agent identity) is more reliable than Escape+inbox1.
+    if [[ "$effective_cli" == "copilot" ]]; then
+        echo "[$(date)] [SKIP] copilot: suppressing Escape escalation for $AGENT_ID; sending explicit nudge" >&2
         send_wakeup "$unread_count"
         return 0
     fi

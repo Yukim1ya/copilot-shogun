@@ -97,6 +97,8 @@
 !scripts/agent_status.sh
 !scripts/ratelimit_check.sh
 !scripts/switch_cli.sh
+!scripts/ashigaru_init.sh
+!scripts/restart_all_agents.sh
 
 
 # SayTask (sample template only, not actual data)
